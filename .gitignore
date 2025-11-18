@@ -1,3 +1,5 @@
 /build
 *.pem
-fizz/
+/fizz/
+/fizz_rs/target/
+/fizz_rs/Cargo.lock

@@ -1,0 +1,23 @@
+[package]
+name = "fizz_rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cxx = { version = "=1.0.176", features = ["c++14"] }
+indexmap = "=2.9.0"
+tokio = { version = "1.0", features = ["io-util", "net", "rt", "rt-multi-thread", "sync", "macros"] }
+futures = "0.3"
+thiserror = "1.0"
+pin-project = "1.0"
+bytes = "1.0"
+serde = { version = "1.0.228", features = ["derive"] }
+
+[build-dependencies]
+cxx-build = "=1.0.176"
+cc = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
+tokio-test = "0.4"
+tempfile = "3.0"
