@@ -7,7 +7,6 @@ use crate::bridge::ffi;
 use crate::error::{FizzError, Result};
 use crate::io::{take_raw_fd, SendableRawPtr};
 use crate::types::VerificationInfo;
-use bytes::Buf;
 use bytes::{BufMut, BytesMut};
 use std::pin::Pin;
 use std::task::{Context, Poll};
