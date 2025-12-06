@@ -373,7 +373,6 @@ size_t server_connection_read(
         }
 
         conn.bytesRead -= toRead;
-        std::printf("Server read %zu bytes from queue\n", copied);
         return copied;
 
     } catch (const std::exception& e) {
