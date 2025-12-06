@@ -60,7 +60,7 @@ struct FizzServerConnection : public folly::AsyncTransportWrapper::ReadCallback 
 
     // Read buffer queue for proper buffer management
     folly::IOBufQueue readBufQueue_{folly::IOBufQueue::cacheChainLength()};
-    size_t bytesRead;
+    std::atomic<size_t> bytesRead;
 };
 
 // Include function declarations (uses forward-declared rust:: types)

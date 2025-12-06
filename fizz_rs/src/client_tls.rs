@@ -217,13 +217,6 @@ impl tokio::io::AsyncRead for ClientConnection {
         cx: &mut Context<'_>,
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> Poll<std::io::Result<()>> {
-        if !self.read_buf.is_empty() {
-            let to_copy = std::cmp::min(self.read_buf.len(), buf.remaining());
-            buf.put_slice(&self.read_buf[..to_copy]);
-            let _ = self.read_buf.split_to(to_copy);
-            return Poll::Ready(Ok(()));
-        }
-
         let read_size = {
             let conn_pin = self.inner.pin_mut();
             match ffi::client_read_size_hint(conn_pin) {
@@ -239,19 +232,16 @@ impl tokio::io::AsyncRead for ClientConnection {
             return Poll::Pending;
         }
 
-        //If we won't be able to read the buffer without reallocation, we need to reallocate first.
-        if self.read_buf.capacity() <= read_size {
-            self.read_buf.reserve(8192);
-        }
+        let mut buf_slice = buf.initialize_unfilled();
 
         //SAFETY: We KNOW length of read_slice is at least as big as the size we are about to read.
         //As for the MaybeUninit, we know we are going to fill at most read_size bytes into the buffer.
         //This is handled by the call to advance
         // Get a slice to read into
-        let chunk = self.read_buf.chunk_mut();
-        let buf_ptr = chunk.as_mut_ptr();
-        let buf_len = chunk.len();
-        let mut buf_slice = unsafe { std::slice::from_raw_parts_mut(buf_ptr, buf_len) };
+        // let chunk = self.read_buf.chunk_mut();
+        // let buf_ptr = chunk.as_mut_ptr();
+        // let buf_len = chunk.len();
+        // let mut buf_slice = unsafe { std::slice::from_raw_parts_mut(buf_ptr, buf_len) };
 
         let conn_pin = self.inner.pin_mut();
         let read = match ffi::client_connection_read(conn_pin, &mut buf_slice) {
@@ -265,12 +255,13 @@ impl tokio::io::AsyncRead for ClientConnection {
             cx.waker().wake_by_ref();
             return Poll::Pending;
         }
+        //
+        // unsafe { self.read_buf.advance_mut(read) };
+        // //THis copies the buffer... Is there a way to
+        // buf.put_slice(&buf_slice[..read]);
+        // let _ = self.read_buf.split_to(read);
 
-        unsafe { self.read_buf.advance_mut(read) };
-        //THis copies the buffer... Is there a way to 
-        buf.put_slice(&buf_slice[..read]);
-        let _ = self.read_buf.split_to(read);
-
+        buf.advance(read);
         Poll::Ready(Ok(()))
     }
 }
@@ -284,9 +275,7 @@ impl tokio::io::AsyncWrite for ClientConnection {
     ) -> Poll<std::io::Result<usize>> {
         match ffi::client_connection_write(self.inner.pin_mut(), buf) {
             Ok(n) => Poll::Ready(Ok(n)),
-            Err(e) => {
-                Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)))
-            }
+            Err(e) => Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e))),
         }
     }
 

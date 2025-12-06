@@ -212,12 +212,6 @@ impl tokio::io::AsyncRead for ServerConnection {
         cx: &mut Context<'_>,
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> Poll<std::io::Result<()>> {
-        if !self.read_buf.is_empty() {
-            let to_copy = std::cmp::min(self.read_buf.len(), buf.remaining());
-            buf.put_slice(&self.read_buf[..to_copy]);
-            let _ = self.read_buf.split_to(to_copy);
-            return Poll::Ready(Ok(()));
-        }
 
 
         let conn_pin = self.inner.pin_mut();
@@ -237,22 +231,26 @@ impl tokio::io::AsyncRead for ServerConnection {
             return Poll::Pending;
         }
 
-        //If we won't be able to read the buffer without reallocation, we need to reallocate first.
-        if self.read_buf.remaining() <= read_size || self.read_buf.capacity() <= read_size {
-            self.read_buf.reserve(8192);
-        }
+        // //If we won't be able to read the buffer without reallocation, we need to reallocate first.
+        // if self.read_buf.remaining() <= read_size || self.read_buf.capacity() <= read_size {
+        //     self.read_buf.reserve(8192);
+        // }
+        //
 
+        let mut buf_slice = buf.initialize_unfilled();
+
+        //Take the initialized_buffer, write into it, advance it.
         //SAFETY: We KNOW length of read_slice is at least as big as the size we are about to read.
         //As for the MaybeUninit, we know we are going to fill at most read_size bytes into the buffer.
         //This is handled by the call to advance
         // Get a slice to read into
-        let chunk = self.read_buf.chunk_mut();
-        let buf_ptr = chunk.as_mut_ptr();
-        let buf_len = chunk.len();
-        let mut buf_slice = unsafe { std::slice::from_raw_parts_mut(buf_ptr, buf_len) };
+        // let chunk = self.read_buf.chunk_mut();
+        // let buf_ptr = chunk.as_mut_ptr();
+        // let buf_len = chunk.len();
+        // let mut buf_slice = unsafe { std::slice::from_raw_parts_mut(buf_ptr, buf_len) };
 
 
-        let read = match ffi::server_connection_read(self.inner.pin_mut(), &mut buf_slice) {
+        let read = match ffi::server_connection_read(self.inner.pin_mut(), buf_slice) {
             Ok(n) => n,
             Err(e) => {
                 return Poll::Ready(Err(std::io::Error::new(
@@ -267,11 +265,7 @@ impl tokio::io::AsyncRead for ServerConnection {
             return Poll::Pending;
         }
 
-        //Only take the first READ bytes out of the entire array SHOULD there be a discrepancy
-        //(there shouldn't realistically)...
-        unsafe {self.read_buf.advance_mut(read)};
-        buf.put_slice(&buf_slice[..read]);
-        let _ =self.read_buf.split_to(read);
+        buf.advance(read);
         Poll::Ready(Ok(()))
     }
 }

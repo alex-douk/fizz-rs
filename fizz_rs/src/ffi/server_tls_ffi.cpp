@@ -354,7 +354,7 @@ size_t server_connection_read(
 
 
         //No read happened.
-        size_t bytesRead_ = conn.bytesRead;
+        auto bytesRead_ = conn.bytesRead.load();
         if (bytesRead_ == 0) {
             return 0;
         }

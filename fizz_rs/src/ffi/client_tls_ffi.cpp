@@ -467,7 +467,7 @@ size_t client_connection_read(
         }
 
         // Consume bytes from the queue and copy to Rust buffer
-        size_t bytesRead_ = conn.bytesRead;
+        size_t bytesRead_ = conn.bytesRead.load();
         if (bytesRead_ == 0) {
             return 0;
         }
