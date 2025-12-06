@@ -238,7 +238,7 @@ impl tokio::io::AsyncRead for ServerConnection {
         }
 
         //If we won't be able to read the buffer without reallocation, we need to reallocate first.
-        if self.read_buf.capacity() <= read_size {
+        if self.read_buf.remaining() <= read_size || self.read_buf.capacity() <= read_size {
             self.read_buf.reserve(8192);
         }
 
