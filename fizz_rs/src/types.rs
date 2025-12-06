@@ -5,6 +5,8 @@
 // Note: The actual struct definitions are in bridge.rs
 // This module re-exports them and provides convenience methods
 
+use serde::ser::SerializeStruct;
+
 pub use crate::bridge::{
     DelegatedCredential,
     ServiceCredential,
@@ -13,6 +15,7 @@ pub use crate::bridge::{
 };
 
 pub use crate::bridge::missing_field;
+use crate::DelegatedCredentialData;
 pub use std::marker::PhantomData;
 pub use std::fmt::Formatter;
 
@@ -901,6 +904,205 @@ impl<'de> serde::Deserialize<'de> for ServiceCredential {
             FIELDS,
             __Visitor {
                 marker: PhantomData::<ServiceCredential>,
+                lifetime: PhantomData,
+            },
+        )
+    }
+}
+
+impl serde::Serialize for DelegatedCredentialData {
+    fn serialize<__S>(
+        &self,
+        __serializer: __S,
+    ) -> Result<__S::Ok, __S::Error>
+    where
+        __S: serde::Serializer,
+    {
+        let mut _serde_state = serde::Serializer::serialize_struct(
+            __serializer,
+            "DelegatedCredentialData",
+            false as usize + 1
+        )?;
+        _serde_state.serialize_field("inner", &self.inner)?;
+        serde::ser::SerializeStruct::end(_serde_state)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DelegatedCredentialData {
+    fn deserialize<__D>(
+        __deserializer: __D,
+    ) -> Result<Self, __D::Error>
+    where
+        __D: serde::Deserializer<'de>,
+    {
+        #[allow(non_camel_case_types)]
+        #[doc(hidden)]
+        enum __Field {
+            __field0,
+            __ignore,
+        }
+        #[doc(hidden)]
+        struct __FieldVisitor;
+        #[automatically_derived]
+        impl<'de> serde::de::Visitor<'de> for __FieldVisitor {
+            type Value = __Field;
+            fn expecting(
+                &self,
+                __formatter: &mut Formatter,
+            ) -> std::fmt::Result {
+                Formatter::write_str(
+                    __formatter,
+                    "field identifier",
+                )
+            }
+
+            fn visit_u64<__E>(
+                self,
+                __value: u64,
+            ) -> Result<Self::Value, __E>
+            where
+                __E: serde::de::Error,
+            {
+                match __value {
+                    0u64 => Ok(__Field::__field0),
+                    _ => Ok(__Field::__ignore),
+                }
+            }
+            fn visit_str<__E>(
+                self,
+                __value: &str,
+            ) -> Result<Self::Value, __E>
+            where
+                __E: serde::de::Error,
+            {
+                match __value {
+                    "inner" => Ok(__Field::__field0),
+                    _ => Ok(__Field::__ignore),
+                }
+            }
+            fn visit_bytes<__E>(
+                self,
+                __value: &[u8],
+            ) -> Result<Self::Value, __E>
+            where
+                __E: serde::de::Error,
+            {
+                match __value {
+                    b"inner" => Ok(__Field::__field0),
+                    _ => Ok(__Field::__ignore),
+                }
+            }
+        }
+        #[automatically_derived]
+        impl<'de> serde::Deserialize<'de> for __Field {
+            #[inline]
+            fn deserialize<__D>(
+                __deserializer: __D,
+            ) -> Result<Self, __D::Error>
+            where
+                __D: serde::Deserializer<'de>,
+            {
+                serde::Deserializer::deserialize_identifier(
+                    __deserializer,
+                    __FieldVisitor,
+                )
+            }
+        }
+        #[doc(hidden)]
+        struct __Visitor<'de> {
+            marker: PhantomData<DelegatedCredentialData>,
+            lifetime: PhantomData<&'de ()>,
+        }
+        #[automatically_derived]
+        impl<'de> serde::de::Visitor<'de> for __Visitor<'de> {
+            type Value = DelegatedCredentialData;
+            fn expecting(
+                &self,
+                __formatter: &mut Formatter,
+            ) -> std::fmt::Result {
+                Formatter::write_str(
+                    __formatter,
+                    "struct DelegatedCredentialData",
+                )
+            }
+            #[inline]
+            fn visit_seq<__A>(
+                self,
+                mut __seq: __A,
+            ) -> Result<Self::Value, __A::Error>
+            where
+                __A: serde::de::SeqAccess<'de>,
+            {
+                let __field0 = match serde::de::SeqAccess::next_element::<
+                    ServiceCredential,
+                >(&mut __seq)? {
+                    Some(__value) => __value,
+                    None => {
+                        return Err(
+                            serde::de::Error::invalid_length(
+                                0usize,
+                                &"struct DelegatedCredentialData with 1 element",
+                            ),
+                        );
+                    }
+                };
+                Ok(DelegatedCredentialData {
+                    inner: __field0,
+                })
+            }
+            #[inline]
+            fn visit_map<__A>(
+                self,
+                mut __map: __A,
+            ) -> Result<Self::Value, __A::Error>
+            where
+                __A: serde::de::MapAccess<'de>,
+            {
+                let mut __field0: Option<ServiceCredential> = None;
+                while let Some(__key) = serde::de::MapAccess::next_key::<
+                    __Field,
+                >(&mut __map)? {
+                    match __key {
+                        __Field::__field0 => {
+                            if Option::is_some(&__field0) {
+                                return Err(
+                                    <__A::Error as serde::de::Error>::duplicate_field(
+                                        "inner",
+                                    ),
+                                );
+                            }
+                            __field0 = Some(
+                                serde::de::MapAccess::next_value::<ServiceCredential>(&mut __map)?,
+                            );
+                        }
+                        _ => {
+                            let _ = serde::de::MapAccess::next_value::<
+                                serde::de::IgnoredAny,
+                            >(&mut __map)?;
+                        }
+                    }
+                }
+                let __field0 = match __field0 {
+                    Some(__field0) => __field0,
+                    None => {
+                        missing_field("inner")?
+                    }
+                };
+                Ok(DelegatedCredentialData {
+                    inner: __field0
+                })
+            }
+        }
+        #[doc(hidden)]
+        const FIELDS: &'static [&'static str] = &[
+            "inner",
+        ];
+        serde::Deserializer::deserialize_struct(
+            __deserializer,
+            "DelegatedCredentialData",
+            FIELDS,
+            __Visitor {
+                marker: PhantomData::<DelegatedCredentialData>,
                 lifetime: PhantomData,
             },
         )
