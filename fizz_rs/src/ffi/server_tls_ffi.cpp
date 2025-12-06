@@ -159,7 +159,6 @@ void FizzServerConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
 }
 
 void FizzServerConnection::readDataAvailable(size_t len) noexcept {
-    std::cout << "Server: Reading data of size " << len << std::endl;
     // Commit the bytes that were read into the queue
     readBufQueue_.postallocate(len);
     bytesRead += len;
@@ -360,7 +359,6 @@ size_t server_connection_read(
             return 0;
         }
 
-        std::cout << "Trying to read from IOBufQueue" << std::endl;
 
         // Split the requested bytes from the queue
         size_t toRead = std::min(bytesRead_, buf.size());
@@ -427,7 +425,6 @@ size_t server_connection_write(
 
       auto wr_cb = WriteCallback(err_str, error, transport);
 
-      // std::cout << "Server: Sync Write" << std::endl;
       auto buf_ = folly::IOBuf::copyBuffer(buf.data(), buf.size());
       conn.evb->runInEventBaseThreadAndWait([&]() {
         transport->writeChain(&wr_cb, std::move(buf_));
@@ -436,7 +433,6 @@ size_t server_connection_write(
       if (error) {
         throw std::runtime_error("Write failed" + err_str);
       }
-      // std::cout << "Server: Sync Write complete" << std::endl;
       // Return number of bytes written
       return buf.size();
 }
@@ -467,7 +463,6 @@ size_t server_connection_write(
 //             //Add read CB here, with the server owning a buffer, and the callback copies data
 //             //from the folly-owned buffer into the connection-owned buffer.
 //
-//             // std::cout << "Async handshake successful!" << std::endl;
 //         }
 //
 //         void fizzHandshakeError(
@@ -527,7 +522,6 @@ size_t server_connection_write(
 //         }
 //
 //         void readDataAvailable(size_t len) noexcept override {
-//           // std::cout << "Reading server available data" << std::endl;
 //             if (!callback_invoked_) {
 //                 callback_invoked_ = true;
 //
@@ -535,7 +529,6 @@ size_t server_connection_write(
 //                 {
 //                     std::lock_guard<std::mutex> lock(conn_->read_mutex);
 //
-//                     // std::cout << "Inside conn mutex for read" << std::endl;
 //                     conn_->pending_read_data.assign(
 //                         owned_buffer_.begin(),
 //                         owned_buffer_.begin() + len);

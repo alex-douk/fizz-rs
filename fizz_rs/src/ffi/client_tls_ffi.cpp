@@ -524,7 +524,6 @@ size_t client_connection_write(
             WriteCallback(std::string& ex_string, bool& error, fizz::client::AsyncFizzClient* transport): ex_string_(ex_string), error_(error), transport_(transport) {}
 
             void writeSuccess() noexcept override {
-              std::cout << "Write successful" << std::endl;
             }
 
             void writeErr(size_t /*bytesWritten*/, const folly::AsyncSocketException& ex) noexcept override {
@@ -539,12 +538,10 @@ size_t client_connection_write(
         bool error = false;
 
         auto wr_cb = WriteCallback(err_str, error, transport);
-        std::cout << "Right before writing to bufqueue" << std::endl << std::flush;
         conn.evb->runInEventBaseThreadAndWait([&]() {
           transport->writeChain(&wr_cb, std::move(buf_));
         });
 
-        std::cout << "Client: Sync Write complete of size "<< write_length << std::endl;
 
         if (error) {
           throw std::runtime_error("Write failed" + err_str);

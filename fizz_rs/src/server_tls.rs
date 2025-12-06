@@ -158,7 +158,6 @@ impl ServerTlsContext {
         let conn_inner_box = unsafe { Box::from_raw(conn_raw.as_ptr()) };
 
         // Create connection with empty buffer
-        // println!("Handshake is complete on the server-side");
         Ok(ServerConnection {
             inner: *conn_inner_box,
             read_buf: BytesMut::with_capacity(8192),
@@ -268,14 +267,10 @@ impl tokio::io::AsyncRead for ServerConnection {
             return Poll::Pending;
         }
 
-        // println!("Rust server: Read {} bytes", read);
-
-        // println!("We read from the network {:?}", &buf_slice[..read]);
         //Only take the first READ bytes out of the entire array SHOULD there be a discrepancy
         //(there shouldn't realistically)...
         unsafe {self.read_buf.advance_mut(read)};
         buf.put_slice(&buf_slice[..read]);
-        // println!("We have IO buffer {:?}", buf);
         let _ =self.read_buf.split_to(read);
         Poll::Ready(Ok(()))
     }
@@ -293,7 +288,6 @@ impl tokio::io::AsyncWrite for ServerConnection {
         // }
 
 
-        println!("Rust Server: trying to write buffer {:?}", buf);
         match ffi::server_connection_write(self.inner.pin_mut(), &buf) {
             Ok(n) => Poll::Ready(Ok(n)),
             Err(e) => Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)))

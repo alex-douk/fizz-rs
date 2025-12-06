@@ -266,13 +266,9 @@ impl tokio::io::AsyncRead for ClientConnection {
             return Poll::Pending;
         }
 
-        // println!("Rust client: Read {} bytes", read);
-
-        // println!("We read from the network {:?}", &buf_slice[..read]);
         unsafe { self.read_buf.advance_mut(read) };
         //THis copies the buffer... Is there a way to 
         buf.put_slice(&buf_slice[..read]);
-        // println!("We have IO buffer {:?}", buf);
         let _ = self.read_buf.split_to(read);
 
         Poll::Ready(Ok(()))
@@ -286,12 +282,9 @@ impl tokio::io::AsyncWrite for ClientConnection {
         _cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<std::io::Result<usize>> {
-        println!("Rust Client: trying to write buffer {:?}", buf);
-        println!("Gonna be writing buffer is size {}", buf.len());
         match ffi::client_connection_write(self.inner.pin_mut(), buf) {
             Ok(n) => Poll::Ready(Ok(n)),
             Err(e) => {
-                eprintln!("Client Poll Write: Got error {:?}", e);
                 Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)))
             }
         }
@@ -300,7 +293,6 @@ impl tokio::io::AsyncWrite for ClientConnection {
     fn poll_flush(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
         // Perform a flush by writing empty data - this ensures C++ buffers are flushed
         // We use the same synchronous pattern as poll_write
-        // println!("Flushing buffers");
         Poll::Ready(Ok(()))
         // match ffi::client_connection_write(self.inner.pin_mut(), &[]) {
         //     Ok(_) => Poll::Ready(Ok(())),
