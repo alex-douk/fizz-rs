@@ -123,6 +123,7 @@ void FizzClientConnection::readDataAvailable(size_t len) noexcept {
     bytesRead += len;
     //Wipe the number of held locks.
     size_t nb_lock_releases = pending_read_lock_numbers.exchange(0);
+    std::cout << "We will be releasing " << nb_lock_releases << " locks" << std::endl;
     for (int i=0; i < nb_lock_releases; i++) {
       read_mutex.unlock();
     }
