@@ -108,7 +108,7 @@ void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   //
 
   read_mutex.lock();
-  auto result = readBufQueue_.preallocate(4096, 65536);
+  auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
 }

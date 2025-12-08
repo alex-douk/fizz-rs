@@ -154,7 +154,7 @@ FizzServerConnection::~FizzServerConnection() {
 void FizzServerConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
   read_mutex.lock();
-  auto result = readBufQueue_.preallocate(4096, 65536);
+  auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
 }
