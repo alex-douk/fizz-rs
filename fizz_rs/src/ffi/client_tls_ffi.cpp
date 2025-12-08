@@ -23,6 +23,7 @@
 #include <openssl/x509_vfy.h>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
 #include <chrono>
 #include <thread>
@@ -104,6 +105,8 @@ FizzClientConnection::~FizzClientConnection() {
 
 void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
+  //
+  std::lock_guard<std::mutex> lock(read_mutex);
   auto result = readBufQueue_.preallocate(4096, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -112,6 +115,7 @@ void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
 void FizzClientConnection::readDataAvailable(size_t len) noexcept {
     // std::cout << "Client::readDataAvailable: Reading available data of size " << len << std::endl;
     // Commit the bytes that were read into the queue
+    std::lock_guard<std::mutex> lock(read_mutex);
     readBufQueue_.postallocate(len);
     bytesRead += len;
 }
@@ -466,6 +470,7 @@ size_t client_connection_read(
             
         }
 
+        std::lock_guard<std::mutex> lock(conn.read_mutex);
         // Consume bytes from the queue and copy to Rust buffer
         size_t bytesRead_ = conn.bytesRead.load();
         if (bytesRead_ == 0) {
