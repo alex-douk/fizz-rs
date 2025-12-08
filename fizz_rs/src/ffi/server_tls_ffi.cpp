@@ -153,7 +153,9 @@ FizzServerConnection::~FizzServerConnection() {
 
 void FizzServerConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
+  std::cout << "Server_side : About to acquire read lock" << std::endl;
   read_mutex.lock();
+  std::cout << "Server_side: Just acquired the lock" << std::endl;
   auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
