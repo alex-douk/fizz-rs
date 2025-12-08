@@ -76,7 +76,7 @@ struct FizzClientConnection : public folly::AsyncTransportWrapper::ReadCallback 
 
     // Pending read data (owned by C++ to avoid Rust buffer lifetime issues)
     std::vector<uint8_t> pending_read_data;
-    std::recursive_mutex read_mutex;
+    std::mutex read_mutex;
 
     // Read buffer queue for proper buffer management
     folly::IOBufQueue readBufQueue_{folly::IOBufQueue::cacheChainLength()};
