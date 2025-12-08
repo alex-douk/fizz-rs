@@ -106,7 +106,8 @@ FizzClientConnection::~FizzClientConnection() {
 void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
   //
-  std::lock_guard<std::mutex> lock(read_mutex);
+
+  read_mutex.lock();
   auto result = readBufQueue_.preallocate(4096, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -115,9 +116,10 @@ void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
 void FizzClientConnection::readDataAvailable(size_t len) noexcept {
     // std::cout << "Client::readDataAvailable: Reading available data of size " << len << std::endl;
     // Commit the bytes that were read into the queue
-    std::lock_guard<std::mutex> lock(read_mutex);
     readBufQueue_.postallocate(len);
     bytesRead += len;
+    read_mutex.unlock();
+    // guard = std::optional<std::lock_guard<std::mutex>>();
 }
 
 void FizzClientConnection::readEOF() noexcept {
