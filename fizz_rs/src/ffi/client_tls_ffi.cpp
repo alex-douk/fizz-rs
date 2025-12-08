@@ -107,9 +107,9 @@ void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
   //
 
-  std::cout << "Client_side: About to acquire the lock";
+  // std::cout << "Client_side: About to acquire the lock" << std::endl;
   read_mutex.lock();
-  std::cout << "Client_side: Acquired the lock";
+  // std::cout << "Client_side: Acquired the lock" << std::endl;
   auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -474,7 +474,7 @@ size_t client_connection_read(
             
         }
 
-        std::lock_guard<std::mutex> lock(conn.read_mutex);
+        std::lock_guard<std::recursive_mutex> lock(conn.read_mutex);
         // Consume bytes from the queue and copy to Rust buffer
         size_t bytesRead_ = conn.bytesRead.load();
         if (bytesRead_ == 0) {
