@@ -153,10 +153,10 @@ FizzServerConnection::~FizzServerConnection() {
 
 void FizzServerConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
-  // std::cout << "Server_side: About to acquire the lock" << std::endl;
+  std::cout << "Server_side: About to acquire the lock" << std::endl;
   read_mutex.lock();
   pending_read_lock_numbers += 1;
-  // std::cout << "Server_side: Acquired the lock" << std::endl;
+  std::cout << "Server_side: Acquired the lock" << std::endl;
   auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -167,6 +167,7 @@ void FizzServerConnection::readDataAvailable(size_t len) noexcept {
     readBufQueue_.postallocate(len);
     bytesRead += len;
     size_t nb_lock_releases = pending_read_lock_numbers.exchange(0);
+    std::cout << "We will be releasing " << nb_lock_releases << " locks" << std::endl;
     for (int i=0; i < nb_lock_releases; i++) {
       read_mutex.unlock();
     }
@@ -370,9 +371,11 @@ size_t server_connection_read(
         }
 
 
+        std::cout << "C++ server read: Holding " << bytesRead_ << " bytes up for read" << std::endl;
         // Split the requested bytes from the queue
         size_t toRead = std::min(bytesRead_, buf.size());
         auto data = conn.readBufQueue_.split(toRead);
+        std::cout << "C++ server read: Intending to read " << toRead << " bytes" << std::endl;
 
         // Copy data from IOBuf chain to Rust buffer
         size_t copied = 0;
@@ -382,6 +385,7 @@ size_t server_connection_read(
             copied += toCopy;
         }
 
+        std::cout << "C++ server read: Ended up reading " << copied << " bytes" << std::endl;
         conn.bytesRead -= toRead;
         return copied;
 
@@ -445,211 +449,3 @@ size_t server_connection_write(
       // Return number of bytes written
       return buf.size();
 }
-
-// ============================================================================
-// Async I/O Operations (Channel-based, zero busy-wait)
-// ============================================================================
-
-// void server_connection_handshake_async(
-//     FizzServerConnection& conn,
-//     rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback,
-//     rust::Box<IoContext> context) {
-//
-//     // Handshake callback - self-deleting after invocation
-//     class AsyncHandshakeCallback : public fizz::server::AsyncFizzServer::HandshakeCallback {
-//         rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback_;
-//         rust::Box<IoContext> context_;
-//
-//     public:
-//         AsyncHandshakeCallback(
-//             rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback,
-//             rust::Box<IoContext> context
-//         ) : callback_(std::move(callback)), context_(std::move(context)) {}
-//
-//         void fizzHandshakeSuccess(fizz::server::AsyncFizzServer* /*transport*/) noexcept override {
-//             // Success - invoke Rust callback with 0 bytes and empty error
-//             callback_(std::move(context_), 0, rust::String(""));
-//             //Add read CB here, with the server owning a buffer, and the callback copies data
-//             //from the folly-owned buffer into the connection-owned buffer.
-//
-//         }
-//
-//         void fizzHandshakeError(
-//             fizz::server::AsyncFizzServer*,
-//             folly::exception_wrapper ex) noexcept override {
-//             // Error - invoke callback with error message
-//             std::string error = ex.what().toStdString();
-//             callback_(std::move(context_), 0, rust::String(error));
-//             delete this;
-//         }
-//
-//         void fizzHandshakeAttemptFallback(fizz::server::AttemptVersionFallback) noexcept override {
-//             callback_(std::move(context_), 0, rust::String("Fallback not supported"));
-//             delete this;
-//         }
-//     };
-//
-//     // Post callback registration to EventBase thread for thread-safe execution
-//     auto* transport = static_cast<fizz::server::AsyncFizzServer*>(conn.transport);
-//     auto* cb = new AsyncHandshakeCallback(std::move(callback), std::move(context));
-//
-//     conn.evb->runInEventBaseThread([transport, cb]() {
-//         // Start handshake on EventBase thread - Fizz takes ownership of callback
-//         transport->accept(cb);
-//     });
-// }
-//
-// void server_connection_read_async(
-//     FizzServerConnection& conn,
-//     rust::Slice<uint8_t> buf,
-//     rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback,
-//     rust::Box<IoContext> context) {
-//
-//     // Read callback - owns buffer to avoid Rust lifetime issues
-//     class AsyncReadCallback : public folly::AsyncTransportWrapper::ReadCallback {
-//         FizzServerConnection* conn_;
-//         std::vector<uint8_t> owned_buffer_;  // C++-owned buffer
-//         rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback_;
-//         rust::Box<IoContext> context_;
-//         folly::AsyncTransportWrapper* transport_;
-//         bool callback_invoked_;
-//
-//     public:
-//         AsyncReadCallback(
-//             FizzServerConnection* conn,
-//             size_t buffer_size,
-//             rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback,
-//             rust::Box<IoContext> context,
-//             folly::AsyncTransportWrapper* transport
-//         ) : conn_(conn), owned_buffer_(buffer_size),
-//             callback_(std::move(callback)), context_(std::move(context)),
-//             transport_(transport), callback_invoked_(false) {}
-//
-//         void getReadBuffer(void** bufOut, size_t* lenOut) override {
-//             *bufOut = owned_buffer_.data();
-//             *lenOut = owned_buffer_.size();
-//         }
-//
-//         void readDataAvailable(size_t len) noexcept override {
-//             if (!callback_invoked_) {
-//                 callback_invoked_ = true;
-//
-//                 // Store data in connection for Rust to retrieve
-//                 {
-//                     std::lock_guard<std::mutex> lock(conn_->read_mutex);
-//
-//                     conn_->pending_read_data.assign(
-//                         owned_buffer_.begin(),
-//                         owned_buffer_.begin() + len);
-//                 }
-//
-//                 // Unregister callback before notifying Rust
-//                 transport_->setReadCB(nullptr);
-//
-//                 // Notify Rust that data is ready
-//                 callback_(std::move(context_), len, rust::String(""));
-//                 delete this;
-//             }
-//         }
-//
-//         void readEOF() noexcept override {
-//             if (!callback_invoked_) {
-//                 callback_invoked_ = true;
-//                 transport_->setReadCB(nullptr);
-//                 callback_(std::move(context_), 0, rust::String("EOF"));
-//                 delete this;
-//             }
-//         }
-//
-//         void readErr(const folly::AsyncSocketException& ex) noexcept override {
-//             if (!callback_invoked_) {
-//                 callback_invoked_ = true;
-//                 transport_->setReadCB(nullptr);
-//                 callback_(std::move(context_), 0, rust::String(ex.what()));
-//                 delete this;
-//             }
-//         }
-//
-//         bool isBufferMovable() noexcept override {
-//             return false;
-//         }
-//
-//         void readBufferAvailable(std::unique_ptr<folly::IOBuf>) noexcept override {
-//             // Not used for non-movable buffers
-//         }
-//     };
-//
-//     auto* transport = static_cast<fizz::server::AsyncFizzServer*>(conn.transport);
-//     auto* cb = new AsyncReadCallback(
-//         &conn, buf.size(),
-//         std::move(callback), std::move(context), transport);
-//
-//     // Post read callback registration to EventBase thread
-//     conn.evb->runInEventBaseThread([transport, cb]() {
-//         transport->setReadCB(cb);
-//     });
-// }
-//
-// void server_connection_copy_read_data(
-//     FizzServerConnection& conn,
-//     rust::Slice<uint8_t> dest) {
-//
-//     std::lock_guard<std::mutex> lock(conn.read_mutex);
-//
-//     if (conn.pending_read_data.empty()) {
-//         return;
-//     }
-//
-//     size_t to_copy = std::min(dest.size(), conn.pending_read_data.size());
-//     std::memcpy(const_cast<uint8_t*>(dest.data()),
-//                 conn.pending_read_data.data(),
-//                 to_copy);
-//
-//     // Clear the pending data after copying
-//     conn.pending_read_data.clear();
-// }
-//
-// void server_connection_write_async(
-//     FizzServerConnection& conn,
-//     rust::Slice<const uint8_t> buf,
-//     rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback,
-//     rust::Box<IoContext> context) {
-//
-//     // Write callback - self-deleting after invocation
-//     class AsyncWriteCallback : public folly::AsyncTransportWrapper::WriteCallback {
-//         size_t bytes_written_;
-//         rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback_;
-//         rust::Box<IoContext> context_;
-//
-//     public:
-//         AsyncWriteCallback(
-//             size_t bytes,
-//             rust::Fn<void(rust::Box<IoContext>, size_t, rust::String)> callback,
-//             rust::Box<IoContext> context
-//         ) : bytes_written_(bytes),
-//             callback_(std::move(callback)), context_(std::move(context)) {}
-//
-//         void writeSuccess() noexcept override {
-//             callback_(std::move(context_), bytes_written_, rust::String(""));
-//             delete this;
-//         }
-//
-//         void writeErr(size_t /*bytesWritten*/, const folly::AsyncSocketException& ex) noexcept override {
-//             callback_(std::move(context_), 0, rust::String(ex.what()));
-//             delete this;
-//         }
-//     };
-//
-//     auto* transport = static_cast<fizz::server::AsyncFizzServer*>(conn.transport);
-//     auto* cb = new AsyncWriteCallback(buf.size(), std::move(callback), std::move(context));
-//
-//     // OPTIMIZATION: Use wrapBuffer for zero-copy write
-//     // Note: We need to copy the buffer data since it may not remain valid
-//     // after this function returns. The Rust side can free it.
-//     auto iobuf = folly::IOBuf::copyBuffer(buf.data(), buf.size());
-//
-//     // Post write operation to EventBase thread
-//     conn.evb->runInEventBaseThread([transport, cb, iobuf = std::move(iobuf)]() mutable {
-//         transport->writeChain(cb, std::move(iobuf));
-//     });
-// }

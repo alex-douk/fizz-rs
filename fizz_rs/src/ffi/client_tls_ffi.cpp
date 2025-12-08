@@ -107,11 +107,10 @@ void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
   //
 
-  // std::cout << "Client_side: About to acquire the lock" << std::endl;
+  std::cout << "Client_side: About to acquire the lock" << std::endl;
   read_mutex.lock();
   pending_read_lock_numbers += 1;
-
-  // std::cout << "Client_side: Acquired the lock" << std::endl;
+  std::cout << "Client_side: Acquired the lock" << std::endl;
   auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -486,9 +485,13 @@ size_t client_connection_read(
             return 0;
         }
 
+        std::cout << "C++ client read: Holding " << bytesRead_ << " bytes up for read" << std::endl;
+
         // Split the requested bytes from the queue
         size_t toRead = std::min(bytesRead_, buf.size());
         auto data = conn.readBufQueue_.split(toRead);
+
+        std::cout << "C++ client read: Intending to read " << toRead << " bytes" << std::endl;
 
         // Copy data from IOBuf chain to Rust buffer
         size_t copied = 0;
@@ -497,6 +500,8 @@ size_t client_connection_read(
             std::memcpy(const_cast<uint8_t*>(buf.data()) + copied, bufNode.data(), toCopy);
             copied += toCopy;
         }
+
+        std::cout << "C++ client read: Ended up reading " << copied << " bytes" << std::endl;
 
         conn.bytesRead -= toRead;
         return copied;

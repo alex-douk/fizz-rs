@@ -227,21 +227,18 @@ impl tokio::io::AsyncRead for ClientConnection {
             }
         };
 
+
         if read_size == 0 {
             cx.waker().wake_by_ref();
             return Poll::Pending;
         }
 
+        println!("On poll_read, we have {} available to read from size_hint", read_size);
+
         let mut buf_slice = buf.initialize_unfilled();
 
-        //SAFETY: We KNOW length of read_slice is at least as big as the size we are about to read.
-        //As for the MaybeUninit, we know we are going to fill at most read_size bytes into the buffer.
-        //This is handled by the call to advance
-        // Get a slice to read into
-        // let chunk = self.read_buf.chunk_mut();
-        // let buf_ptr = chunk.as_mut_ptr();
-        // let buf_len = chunk.len();
-        // let mut buf_slice = unsafe { std::slice::from_raw_parts_mut(buf_ptr, buf_len) };
+        println!("We will try to read into a buffer of size {}", buf_slice.len());
+
 
         let conn_pin = self.inner.pin_mut();
         let read = match ffi::client_connection_read(conn_pin, &mut buf_slice) {
@@ -250,6 +247,8 @@ impl tokio::io::AsyncRead for ClientConnection {
                 return Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)));
             }
         };
+
+        println!("On poll_read, we have read {} ", read);
 
         if read == 0 {
             cx.waker().wake_by_ref();
