@@ -472,7 +472,7 @@ size_t client_connection_read(
             
         }
 
-        std::lock_guard<std::recrsive_mutex> lock(conn.read_mutex);
+        std::lock_guard<std::recursive_mutex> lock(conn.read_mutex);
         // Consume bytes from the queue and copy to Rust buffer
         size_t bytesRead_ = conn.bytesRead.load();
         if (bytesRead_ == 0) {
