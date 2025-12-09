@@ -233,11 +233,11 @@ impl tokio::io::AsyncRead for ClientConnection {
             return Poll::Pending;
         }
 
-        println!("On poll_read, we have {} available to read from size_hint", read_size);
+        // println!("On poll_read, we have {} available to read from size_hint", read_size);
 
         let mut buf_slice = buf.initialize_unfilled();
 
-        println!("We will try to read into a buffer of size {}", buf_slice.len());
+        // println!("We will try to read into a buffer of size {}", buf_slice.len());
 
 
         let conn_pin = self.inner.pin_mut();
@@ -248,7 +248,7 @@ impl tokio::io::AsyncRead for ClientConnection {
             }
         };
 
-        println!("On poll_read, we have read {} ", read);
+        // println!("On poll_read, we have read {} ", read);
 
         if read == 0 {
             cx.waker().wake_by_ref();

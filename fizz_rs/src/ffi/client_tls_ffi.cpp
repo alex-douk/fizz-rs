@@ -107,10 +107,10 @@ void FizzClientConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
   //
 
-  std::cout << "Client_side: About to acquire the lock" << std::endl;
+  // std::cout << "Client_side: About to acquire the lock" << std::endl;
   read_mutex.lock();
   pending_read_lock_numbers += 1;
-  std::cout << "Client_side: Acquired the lock" << std::endl;
+  // std::cout << "Client_side: Acquired the lock" << std::endl;
   auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -123,7 +123,7 @@ void FizzClientConnection::readDataAvailable(size_t len) noexcept {
     bytesRead += len;
     //Wipe the number of held locks.
     size_t nb_lock_releases = pending_read_lock_numbers.exchange(0);
-    std::cout << "We will be releasing " << nb_lock_releases << " locks" << std::endl;
+    // std::cout << "We will be releasing " << nb_lock_releases << " locks" << std::endl;
     for (int i=0; i < nb_lock_releases; i++) {
       read_mutex.unlock();
     }
@@ -131,7 +131,7 @@ void FizzClientConnection::readDataAvailable(size_t len) noexcept {
 
 void FizzClientConnection::readEOF() noexcept {
     auto* transport_ = static_cast<fizz::client::AsyncFizzClient*>(transport);
-    std::cout << "Server closed connection" << std::endl;
+    // std::cout << "Server closed connection" << std::endl;
     transport_->closeNow();
 }
 
@@ -486,13 +486,13 @@ size_t client_connection_read(
             return 0;
         }
 
-        std::cout << "C++ client read: Holding " << bytesRead_ << " bytes up for read" << std::endl;
+        // std::cout << "C++ client read: Holding " << bytesRead_ << " bytes up for read" << std::endl;
 
         // Split the requested bytes from the queue
         size_t toRead = std::min(bytesRead_, buf.size());
         auto data = conn.readBufQueue_.split(toRead);
 
-        std::cout << "C++ client read: Intending to read " << toRead << " bytes" << std::endl;
+        // std::cout << "C++ client read: Intending to read " << toRead << " bytes" << std::endl;
 
         // Copy data from IOBuf chain to Rust buffer
         size_t copied = 0;
@@ -502,7 +502,7 @@ size_t client_connection_read(
             copied += toCopy;
         }
 
-        std::cout << "C++ client read: Ended up reading " << copied << " bytes" << std::endl;
+        // std::cout << "C++ client read: Ended up reading " << copied << " bytes" << std::endl;
 
         conn.bytesRead -= toRead;
         return copied;

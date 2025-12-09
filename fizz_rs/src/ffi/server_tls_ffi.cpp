@@ -153,10 +153,10 @@ FizzServerConnection::~FizzServerConnection() {
 
 void FizzServerConnection::getReadBuffer(void** bufReturn, size_t* lenReturn) {
   // Preallocate buffer in the queue - min 4096 bytes
-  std::cout << "Server_side: About to acquire the lock" << std::endl;
+  // std::cout << "Server_side: About to acquire the lock" << std::endl;
   read_mutex.lock();
   pending_read_lock_numbers += 1;
-  std::cout << "Server_side: Acquired the lock" << std::endl;
+  // std::cout << "Server_side: Acquired the lock" << std::endl;
   auto result = readBufQueue_.preallocate(40960, 65536);
   *bufReturn = result.first;
   *lenReturn = result.second;
@@ -167,7 +167,7 @@ void FizzServerConnection::readDataAvailable(size_t len) noexcept {
     readBufQueue_.postallocate(len);
     bytesRead += len;
     size_t nb_lock_releases = pending_read_lock_numbers.exchange(0);
-    std::cout << "We will be releasing " << nb_lock_releases << " locks" << std::endl;
+    // std::cout << "We will be releasing " << nb_lock_releases << " locks" << std::endl;
     for (int i=0; i < nb_lock_releases; i++) {
       read_mutex.unlock();
     }
@@ -371,11 +371,11 @@ size_t server_connection_read(
         }
 
 
-        std::cout << "C++ server read: Holding " << bytesRead_ << " bytes up for read" << std::endl;
+        // std::cout << "C++ server read: Holding " << bytesRead_ << " bytes up for read" << std::endl;
         // Split the requested bytes from the queue
         size_t toRead = std::min(bytesRead_, buf.size());
         auto data = conn.readBufQueue_.split(toRead);
-        std::cout << "C++ server read: Intending to read " << toRead << " bytes" << std::endl;
+        // std::cout << "C++ server read: Intending to read " << toRead << " bytes" << std::endl;
 
         // Copy data from IOBuf chain to Rust buffer
         size_t copied = 0;
@@ -385,7 +385,7 @@ size_t server_connection_read(
             copied += toCopy;
         }
 
-        std::cout << "C++ server read: Ended up reading " << copied << " bytes" << std::endl;
+        // std::cout << "C++ server read: Ended up reading " << copied << " bytes" << std::endl;
         conn.bytesRead -= toRead;
         return copied;
 
