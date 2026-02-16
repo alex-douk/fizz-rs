@@ -1,0 +1,3 @@
+[submodule "third_party/fizz"]
+	path = third_party/fizz
+	url = https://github.com/facebookincubator/fizz.git

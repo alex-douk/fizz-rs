@@ -1,5 +1,5 @@
-/build
-*.pem
-/fizz/
-/fizz_rs/target/
-/fizz_rs/Cargo.lock
+/third_party/fizz-install
+*.key
+*.crt
+/target/
+.idea/

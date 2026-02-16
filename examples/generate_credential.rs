@@ -4,14 +4,17 @@
 
 use fizz_rs::{Certificate, CredentialGenerator};
 
+const KEY_PATH: &'static str = "fizz.key";
+const CERT_PATH: &'static str = "fizz.crt";
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Delegated Credential Generation Example ===\n");
 
     // Step 1: Load parent certificate
     println!("1. Loading parent certificate...");
     let cert = Certificate::load_from_files(
-        "../sidecar_cert.pem",
-        "../sidecar_key.pem"
+        CERT_PATH,
+        KEY_PATH
     )?;
 
     println!("   ✓ Certificate loaded successfully");
