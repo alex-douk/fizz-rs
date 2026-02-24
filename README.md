@@ -4,7 +4,7 @@ Rust FFI bindings for delegated credentials (DC) TLS with Fizz.
 
 ## Certificate and Keys
 
-The underlying private key and SSL certificate must be explicilty configured to support delegated credentials (DC) at generation time.
+The underlying private key and SSL certificate must be explicitly configured to support delegated credentials (DC) at generation time.
 
 We provide a `generate_certificate.sh` that generates a self-signed testing certificate with DC enabled.
 
@@ -23,31 +23,31 @@ These dependencies need to be installed system-wide:
 * glog, fmt
 * libsodium, OpenSSL, libevent, and all other transitive dependencies of folly
 
-We found that installing fizz's dependencies via the `build/fbcode_builder/getdeps.py` provided in fizz (see their repo for instructions) is sufficient to install all dependencies.
+We include building fizz, folly, and most of their dependencies in our `build.rs` workflow. However, in the interest of keeping
+build time short, we configure fizz to rely on a few system-wide dependencies for popular libraries (specifically, libsodium, libevent, and a handful of others).
 
-We recommend following these steps and seeing if they work. If not, you may need to do something more manual.
-
-0. Ensure you ran `git clone` with `--recrusive` flag, or alternatively, that you updated all gitsubmodules
-
-1. Build fizz and all its dependencies using our script (wrapper for `getdeps.py`)
+To ensure these dependencies are installed, please use the following command:
 ```bash
-cd third_party/ 
-./build-fizz.sh
+# Make sure you pull our submodules
+git submodule init && git submodule update
+# Install system-wide dependencies
+cd third_party/fizz
+python3 build/fbcode_builder/getdeps.py --allow-system-packages install-system-deps --recursive fizz
 ```
 
-This may take a while, but when it is successfull, it will install some dependencies as system-wide dependencies (e.g. libevent), and build a handful of others and install them under `third_party/fizz-install`.
+You only need to do this once. After which, `cargo build` and similar commands will be enough.
 
-Our `build.rs` is configured to look for the `lib` and `include` subdirectories in that installation directory and add them.
-
-If this does not work. Your best bet is to look at `build.rs` list of all libraries it needs to link with, and ensure they are installed as system wide dependencies.
-
-2. Run `cargo build` to confirm include paths are set correctly.
-
-3. Run `cargo test` and `cargo run --example generate_credential` to confirm everything works as intended.
+To confirm that everything is correct, run these commands:
+```bash
+cargo build  # tests that fizz can be built and the include paths are set correctly.
+cargo test   # runs our tests and ensures the bridge is linked correctly
+cargo run --example generate_credential  # runs an end-to-end delegated credentials workflow
+```
 
 ### Notes
 
 We used `-Wl,-rpath` to make sure that the generated binaries and tests can see `libglog.so.0`. This may not work
 consistently when using this library as a transitive dependency with other cargo projects.
 
-You may need to ensure that `LD_LIBRARY_PATH` is configured such that `libglog.so.0` is visible. You can find the exact version (or, retrieve and install the so youself) by looking at `third_party/fizz/glog-<hash>/lib`.
+You may need to ensure that `LD_LIBRARY_PATH` is configured such that `libglog.so.0` is visible. You can find the exact version (or, retrieve and install the so yourself) by looking at 
+`target/debug/build/fizz_rs-<hash>/out/fizz-install/installed/glog-<hash>/lib`.
