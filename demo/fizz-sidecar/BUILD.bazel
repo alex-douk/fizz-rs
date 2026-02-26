@@ -1,0 +1,13 @@
+alias(
+    name = "sidecar",
+    actual = "//sidecar:main",
+)
+
+filegroup(
+    name = "cert",
+    srcs = [
+        "fizz.crt",
+        "fizz.key"
+    ],
+    visibility = ["//visibility:public"],
+)

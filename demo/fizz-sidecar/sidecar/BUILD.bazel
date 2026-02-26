@@ -1,0 +1,41 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [
+      "@fizz",
+      "@nlohmann_json//:json",
+      ":credential",
+      ":files",
+    ],
+    data = [
+        "//:cert",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "credential",
+    srcs = ["credential.cc"],
+    hdrs = ["credential.h"],
+    deps = [
+        "@fizz",
+        ":crypto_utils",
+    ],
+)
+
+cc_library(
+    name = "crypto_utils",
+    srcs = ["crypto_utils.cc"],
+    hdrs = ["crypto_utils.h"],
+    deps = ["@fizz"],  
+)
+
+cc_library(
+    name = "files",
+    srcs = ["files.cc"],
+    hdrs = ["files.h"],
+    deps = ["@fizz"],  
+)

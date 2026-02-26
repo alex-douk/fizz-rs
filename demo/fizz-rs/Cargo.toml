@@ -1,0 +1,18 @@
+[package]
+name = "fizz_rs_server"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
+
+[dependencies]
+fizz_rs = { path = "../../" }
+serde = { version = "1.0.228", features = [ "derive" ] }
+serde_json = "1.0.149"
+tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }

@@ -51,3 +51,21 @@ consistently when using this library as a transitive dependency with other cargo
 
 You may need to ensure that `LD_LIBRARY_PATH` is configured such that `libglog.so.0` is visible. You can find the exact version (or, retrieve and install the so yourself) by looking at 
 `target/debug/build/fizz_rs-<hash>/out/fizz-install/installed/glog-<hash>/lib`.
+
+## Demo
+
+The demo directly contains a demo of an end to end flow using fizz_rs for delegated credentials.
+
+First run the sidecar to generate the delegated credential and verification info at `/tmp/fizz_server.json` and `/tmp/fizz_client.json`
+```bash
+cd demo/fizz-sidecar
+bazel run :sidecar
+```
+
+Then, run the server and client, which use the delegated credentials to do a TLS handshake.
+```bash
+cd /demo/fizz-rs
+cargo run --bin server
+# in a different terminal
+cargo run --bin client
+```

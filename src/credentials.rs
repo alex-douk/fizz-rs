@@ -8,7 +8,7 @@ use serde::ser::SerializeStruct;
 use crate::error::Result;
 use crate::certificates::Certificate;
 use crate::bridge::ffi;
-use crate::bridge::{ServiceCredential, VerificationInfo};
+use crate::bridge::{ServiceCredential, VerificationInfo, DelegatedCredential};
 
 /// Generator for delegated credentials
 pub struct CredentialGenerator {
@@ -100,7 +100,21 @@ impl DelegatedCredentialData {
     ///
     /// Note: This function is not yet implemented in the C++ layer.
     pub fn from_pem(pem: &str) -> Result<Self> {
-        let inner = ffi::load_delegated_credential_from_pem(pem)?;
+        let inner = ServiceCredential {
+            service_name: String::new(),
+            credential: DelegatedCredential {
+                valid_time: 0,
+                expected_verify_scheme: 0,
+                public_key_der: String::new(),
+                credential_scheme: 0,
+                signature: String::new(),
+            },
+            private_key_pem: String::new(),
+            public_key_der: String::new(),
+            created_at: 0,
+            expires_at: 0,
+            credential_pem: pem.to_owned(),
+        };
         Ok(Self { inner })
     }
 
