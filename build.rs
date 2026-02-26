@@ -82,9 +82,9 @@ fn main() {
     // Link against required libraries
     println!("cargo:rustc-link-lib=fizz");
     println!("cargo:rustc-link-lib=folly");
-    //println!("cargo:rustc-link-lib=unwind");
-    //println!("cargo:rustc-link-lib=lzma");
-    //println!("cargo:rustc-link-lib=oqs");
+    println!("cargo:rustc-link-lib=unwind");
+    println!("cargo:rustc-link-lib=lzma");
+    println!("cargo:rustc-link-lib=oqs");
     println!("cargo:rustc-link-lib=fmt");
     println!("cargo:rustc-link-lib=event");
     println!("cargo:rustc-link-lib=double-conversion");

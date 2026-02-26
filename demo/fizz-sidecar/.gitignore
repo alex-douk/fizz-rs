@@ -1,0 +1,4 @@
+bazel-bin/
+bazel-fizz-sidecar/
+bazel-out/
+baezl-testlogs/
